@@ -1,0 +1,16 @@
+{
+  "name": "Pencil GO",
+  "description": "Мультиплеерная игра в рисование и угадывание",
+  "repository": "https://github.com/pudgekaramelkin/pencilgo",
+  "keywords": ["node", "express", "socket.io", "react", "game"],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "value": "production"
+    }
+  }
+}

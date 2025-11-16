@@ -50,8 +50,10 @@ export class GameLogic {
       player.hasGuessedCorrectly = true;
       room.guessedPlayers.add(playerId);
 
-      const drawer = room.players.get(room.currentDrawerId!);
-      if (drawer) drawer.score += 50;
+      if (room.currentDrawerId) {
+        const drawer = room.players.get(room.currentDrawerId);
+        if (drawer) drawer.score += 50;
+      }
 
       return true;
     }
@@ -74,11 +76,12 @@ export class GameLogic {
   revealLetter(room: Room): void {
     if (!room.currentWord) return;
 
-    const unrevealedIndices = room.currentWord
+    const currentWord = room.currentWord;
+    const unrevealedIndices = currentWord
       .split("")
       .map((_, i) => i)
       .filter(
-        (i) => !room.revealedIndices.has(i) && room.currentWord![i] !== " ",
+        (i) => !room.revealedIndices.has(i) && currentWord[i] !== " ",
       );
 
     if (unrevealedIndices.length > 0) {
@@ -89,8 +92,10 @@ export class GameLogic {
   }
 
   endRound(room: Room): void {
+    if (!room.currentDrawerId) return;
+
     const playerIds = Array.from(room.players.keys());
-    const currentIndex = playerIds.indexOf(room.currentDrawerId!);
+    const currentIndex = playerIds.indexOf(room.currentDrawerId);
     const nextIndex = (currentIndex + 1) % playerIds.length;
 
     if (nextIndex === 0) {
@@ -105,8 +110,10 @@ export class GameLogic {
   }
 
   async nextRound(room: Room): Promise<void> {
+    if (!room.currentDrawerId) return;
+
     const playerIds = Array.from(room.players.keys());
-    const currentIndex = playerIds.indexOf(room.currentDrawerId!);
+    const currentIndex = playerIds.indexOf(room.currentDrawerId);
     const nextIndex = (currentIndex + 1) % playerIds.length;
 
     room.currentDrawerId = playerIds[nextIndex];

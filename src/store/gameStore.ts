@@ -23,6 +23,35 @@ interface ChatMessage {
   timestamp: number;
 }
 
+interface RoomStateResponse {
+  code: string;
+  hostId: string;
+  players: Player[];
+  maxPlayers: number;
+  totalRounds: number;
+  roundTime: number;
+  currentRound: number;
+  currentDrawerId: string | null;
+  gameState: "home" | "lobby" | "choosing" | "drawing" | "results" | "gameOver";
+  wordOptions?: string[];
+  maskedWord?: string;
+  unmaskedWord?: string;
+  strokes?: DrawStroke[];
+  roundStartTime?: number | null;
+}
+
+interface SocketResponse {
+  success: boolean;
+  error?: string;
+  roomCode?: string;
+}
+
+interface GameSettings {
+  maxPlayers?: number;
+  totalRounds?: number;
+  roundTime?: number;
+}
+
 interface GameState {
   socket: Socket | null;
   gameState: "home" | "lobby" | "choosing" | "drawing" | "results" | "gameOver";
@@ -47,7 +76,7 @@ interface GameState {
   createRoom: (playerName: string) => void;
   joinRoom: (roomCode: string, playerName: string) => void;
   toggleReady: () => void;
-  updateSettings: (settings: any) => void;
+  updateSettings: (settings: GameSettings) => void;
   startGame: () => void;
   selectWord: (word: string) => void;
   sendStroke: (stroke: DrawStroke) => void;
@@ -58,7 +87,7 @@ interface GameState {
   leaveRoom: () => void;
 }
 
-export const useGameStore = create<GameState>((set: any, get: any) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   socket: null,
   gameState: "home",
   roomCode: "",
@@ -89,7 +118,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
       set({ socket, playerId: socket.id });
     });
 
-    socket.on("roomState", (state: any) => {
+    socket.on("roomState", (state: RoomStateResponse) => {
       set({
         roomCode: state.code,
         hostId: state.hostId,
@@ -104,18 +133,18 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
         maskedWord: state.maskedWord || "",
         unmaskedWord: state.unmaskedWord || "",
         strokes: state.strokes || [],
-        roundStartTime: state.roundStartTime,
+        roundStartTime: state.roundStartTime ?? null,
       });
     });
 
     socket.on("chatMessage", (msg: ChatMessage) => {
-      set((state: any) => ({ chatMessages: [...state.chatMessages, msg] }));
+      set((state: GameState) => ({ chatMessages: [...state.chatMessages, msg] }));
     });
 
     socket.on(
       "correctGuess",
       ({ playerId, playerName }: { playerId: string; playerName: string }) => {
-        set((state: any) => ({
+        set((state: GameState) => ({
           chatMessages: [
             ...state.chatMessages,
             {
@@ -130,7 +159,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
     );
 
     socket.on("drawUpdate", (stroke: DrawStroke) => {
-      set((state: any) => ({ strokes: [...state.strokes, stroke] }));
+      set((state: GameState) => ({ strokes: [...state.strokes, stroke] }));
     });
 
     socket.on("canvasCleared", () => {
@@ -147,11 +176,11 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
 
   createRoom: (playerName: string) => {
     const { socket } = get();
-    socket?.emit("createRoom", { playerName }, (response: any) => {
-      if (response.success) {
+    socket?.emit("createRoom", { playerName }, (response: SocketResponse) => {
+      if (response.success && response.roomCode) {
         set({ playerName, roomCode: response.roomCode, gameState: "lobby" });
       } else {
-        alert(response.error);
+        alert(response.error || "Ошибка при создании комнаты");
       }
     });
   },
@@ -161,7 +190,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
     socket?.emit(
       "joinRoom",
       { roomCode: roomCode.toUpperCase(), playerName },
-      (response: any) => {
+      (response: SocketResponse) => {
         if (response.success) {
           set({
             playerName,
@@ -169,7 +198,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
             gameState: "lobby",
           });
         } else {
-          alert(response.error);
+          alert(response.error || "Ошибка при присоединении к комнате");
         }
       },
     );
@@ -180,7 +209,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
     socket?.emit("toggleReady", { roomCode });
   },
 
-  updateSettings: (settings: any) => {
+  updateSettings: (settings: GameSettings) => {
     const { socket, roomCode } = get();
     socket?.emit("updateSettings", { roomCode, settings });
   },
@@ -197,7 +226,7 @@ export const useGameStore = create<GameState>((set: any, get: any) => ({
 
   sendStroke: (stroke: DrawStroke) => {
     const { socket, roomCode } = get();
-    set((state: any) => ({ strokes: [...state.strokes, stroke] }));
+    set((state: GameState) => ({ strokes: [...state.strokes, stroke] }));
     socket?.emit("draw", { roomCode, stroke });
   },
 

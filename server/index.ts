@@ -8,6 +8,18 @@ import { GameLogic } from "./gameLogic.js";
 import { containsProfanity } from "./profanityFilter.js";
 import { DrawStroke } from "./types.js";
 
+interface SocketResponse {
+  success: boolean;
+  error?: string;
+  roomCode?: string;
+}
+
+interface GameSettings {
+  maxPlayers?: number;
+  totalRounds?: number;
+  roundTime?: number;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -46,7 +58,10 @@ io.on("connection", (socket) => {
 
   socket.on(
     "createRoom",
-    ({ playerName }: { playerName: string }, callback: (res: any) => void) => {
+    (
+      { playerName }: { playerName: string },
+      callback: (res: SocketResponse) => void
+    ) => {
       if (containsProfanity(playerName)) {
         callback({ success: false, error: "Недопустимое имя" });
         return;
@@ -63,7 +78,7 @@ io.on("connection", (socket) => {
     "joinRoom",
     (
       { roomCode, playerName }: { roomCode: string; playerName: string },
-      callback: (res: any) => void,
+      callback: (res: SocketResponse) => void
     ) => {
       if (containsProfanity(playerName)) {
         callback({ success: false, error: "Недопустимое имя" });
@@ -100,7 +115,13 @@ io.on("connection", (socket) => {
 
   socket.on(
     "updateSettings",
-    ({ roomCode, settings }: { roomCode: string; settings: any }) => {
+    ({
+      roomCode,
+      settings,
+    }: {
+      roomCode: string;
+      settings: GameSettings;
+    }) => {
       const room = roomManager.getRoom(roomCode);
       if (!room || socket.id !== room.hostId) return;
 
@@ -304,7 +325,7 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(join(__dirname, "../dist/index.html"));
   });
 }
-//@ts-ignore TODO: пофиксить
+// @ts-expect-error - listen может принимать host как второй аргумент
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);

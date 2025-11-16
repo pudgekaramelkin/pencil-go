@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { Stage, Layer, Line } from "react-konva";
+import { Stage as KonvaStage } from "konva/lib/Stage";
+import type { KonvaEventObject } from "konva/lib/Node";
 import { useGameStore } from "../store/gameStore";
 
 export default function Canvas() {
@@ -12,20 +14,24 @@ export default function Canvas() {
   const [currentLine, setCurrentLine] = useState<number[]>([]);
 
   const isDrawer = playerId === currentDrawerId;
-  const stageRef = useRef<any>(null);
+  const stageRef = useRef<KonvaStage>(null);
 
-  const handleMouseDown = (e: any) => {
+  const handleMouseDown = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (!isDrawer) return;
     setIsDrawing(true);
-    const pos = e.target.getStage().getPointerPosition();
-    setCurrentLine([pos.x, pos.y]);
+    const pos = e.target.getStage()?.getPointerPosition();
+    if (pos) {
+      setCurrentLine([pos.x, pos.y]);
+    }
   };
 
-  const handleMouseMove = (e: any) => {
+  const handleMouseMove = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (!isDrawing || !isDrawer) return;
     const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-    setCurrentLine([...currentLine, point.x, point.y]);
+    const point = stage?.getPointerPosition();
+    if (point) {
+      setCurrentLine([...currentLine, point.x, point.y]);
+    }
   };
 
   const handleMouseUp = () => {

@@ -83,7 +83,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   players: [],
   maxPlayers: 10,
   totalRounds: 3,
-  roundTime: 30,
+  roundTime: 120,
   currentRound: 0,
   currentDrawerId: null,
   wordOptions: [],

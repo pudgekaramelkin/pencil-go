@@ -277,16 +277,36 @@ function startRoundTimers(roomCode: string): void {
   clearRoundTimers(roomCode);
 
   const room = roomManager.getRoom(roomCode);
-  if (!room) return;
+  if (!room || !room.currentWord) return;
 
   const timers: NodeJS.Timeout[] = [];
 
-  for (let i = 5; i <= room.roundTime; i += 5) {
-    const timer = setTimeout(() => {
-      gameLogic.revealLetter(room);
+  const letters = room.currentWord
+    .split("")
+    .filter((char) => char !== " ")
+    .length;
+
+  const lettersToReveal = Math.max(0, letters - 1);
+
+  if (lettersToReveal > 0) {
+    const finalRevealTime = 5;
+    const revealDuration = Math.max(1, room.roundTime - finalRevealTime);
+    const interval = revealDuration / lettersToReveal;
+
+    for (let i = 0; i < lettersToReveal; i++) {
+      const delay = Math.round(interval * (i + 1) * 1000);
+      const timer = setTimeout(() => {
+        gameLogic.revealLetter(room);
+        emitRoomState(roomCode);
+      }, delay);
+      timers.push(timer);
+    }
+
+    const finalRevealTimer = setTimeout(() => {
+      gameLogic.revealAllButOne(room);
       emitRoomState(roomCode);
-    }, i * 1000);
-    timers.push(timer);
+    }, (room.roundTime - finalRevealTime) * 1000);
+    timers.push(finalRevealTimer);
   }
 
   const endTimer = setTimeout(() => {

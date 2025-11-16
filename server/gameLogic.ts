@@ -86,12 +86,34 @@ export class GameLogic {
         (i) => !room.revealedIndices.has(i) && currentWord[i] !== " ",
       );
 
-    if (unrevealedIndices.length > 0) {
+    // Не открываем букву, если осталась только одна неоткрытая буква
+    if (unrevealedIndices.length > 1) {
       const randomIndex =
         unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
       if (randomIndex !== undefined) {
         room.revealedIndices.add(randomIndex);
       }
+    }
+  }
+
+  revealAllButOne(room: Room): void {
+    if (!room.currentWord) return;
+
+    const currentWord = room.currentWord;
+    const unrevealedIndices = currentWord
+      .split("")
+      .map((_, i) => i)
+      .filter(
+        (i) => !room.revealedIndices.has(i) && currentWord[i] !== " ",
+      );
+
+    // Открываем все буквы кроме одной (последней)
+    if (unrevealedIndices.length > 1) {
+      // Оставляем последнюю букву закрытой
+      const lettersToReveal = unrevealedIndices.slice(0, -1);
+      lettersToReveal.forEach((index) => {
+        room.revealedIndices.add(index);
+      });
     }
   }
 

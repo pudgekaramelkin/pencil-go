@@ -181,6 +181,12 @@ const WORDS = [
 ];
 
 export function getRandomWords(count: number = 3): string[] {
+  if (count < 1) {
+    throw new Error("Count must be at least 1");
+  }
+  if (count > WORDS.length) {
+    throw new Error(`Count cannot exceed ${WORDS.length}`);
+  }
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }

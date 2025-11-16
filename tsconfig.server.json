@@ -5,9 +5,8 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "./dist-server",
-    "rootDir": "./server",
     "noEmit": false
   },
-  "include": ["server/**/*"],
+  "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist", "client"]
 }

@@ -1,20 +1,6 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
-
-interface Player {
-  id: string;
-  name: string;
-  score: number;
-  isReady: boolean;
-  hasGuessedCorrectly: boolean;
-}
-
-interface DrawStroke {
-  tool: "pen" | "eraser";
-  points: number[];
-  color: string;
-  size: number;
-}
+import type { Player, DrawStroke } from "../../shared/types";
 
 interface ChatMessage {
   playerId: string;

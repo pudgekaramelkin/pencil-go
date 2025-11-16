@@ -14,7 +14,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true
   },
-  "include": ["src"]
+  "include": ["src", "shared"]
 }

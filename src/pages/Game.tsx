@@ -32,6 +32,7 @@ export default function Game() {
       }, 100);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [gameState, roundStartTime, roundTime]);
 
   const isDrawer = playerId === currentDrawerId;

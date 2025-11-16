@@ -6,7 +6,7 @@ import { dirname, join } from "path";
 import { RoomManager } from "./roomManager.js";
 import { GameLogic } from "./gameLogic.js";
 import { containsProfanity } from "./profanityFilter.js";
-import { DrawStroke } from "./types.js";
+import type { DrawStroke } from "./types.js";
 
 interface SocketResponse {
   success: boolean;
@@ -40,7 +40,7 @@ app.get("/health", (_, res) => {
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
-    rooms: roomManager["rooms"].size,
+    rooms: roomManager.getRoomCount(),
     connections: io.engine.clientsCount,
   });
 });
@@ -241,17 +241,15 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Пользователь отключился:", socket.id);
 
-    for (const [code, room] of Array.from(roomManager["rooms"].entries())) {
-      if (room.players.has(socket.id)) {
-        roomManager.removePlayer(code, socket.id);
-        emitRoomState(code);
-        break;
-      }
+    const room = roomManager.findRoomByPlayerId(socket.id);
+    if (room) {
+      roomManager.removePlayer(room.code, socket.id);
+      emitRoomState(room.code);
     }
   });
 });
 
-function emitRoomState(roomCode: string) {
+function emitRoomState(roomCode: string): void {
   const room = roomManager.getRoom(roomCode);
   if (!room) return;
 
@@ -275,7 +273,7 @@ function emitRoomState(roomCode: string) {
   });
 }
 
-function startRoundTimers(roomCode: string) {
+function startRoundTimers(roomCode: string): void {
   clearRoundTimers(roomCode);
 
   const room = roomManager.getRoom(roomCode);
@@ -299,7 +297,7 @@ function startRoundTimers(roomCode: string) {
   revealTimers.set(roomCode, timers);
 }
 
-function endRoundNow(roomCode: string) {
+function endRoundNow(roomCode: string): void {
   clearRoundTimers(roomCode);
 
   const room = roomManager.getRoom(roomCode);
@@ -309,7 +307,7 @@ function endRoundNow(roomCode: string) {
   emitRoomState(roomCode);
 }
 
-function clearRoundTimers(roomCode: string) {
+function clearRoundTimers(roomCode: string): void {
   const timers = revealTimers.get(roomCode);
   if (timers) {
     timers.forEach((t) => clearTimeout(t));
@@ -317,7 +315,7 @@ function clearRoundTimers(roomCode: string) {
   }
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
@@ -325,8 +323,9 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(join(__dirname, "../dist/index.html"));
   });
 }
-// @ts-expect-error - listen может принимать host как второй аргумент
-httpServer.listen(PORT, "0.0.0.0", () => {
+
+const host = "0.0.0.0";
+httpServer.listen(PORT, host, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
   if (process.env.NODE_ENV !== "production") {

@@ -9,7 +9,9 @@ export class GameLogic {
     room.gameState = "choosing";
 
     const playerIds = Array.from(room.players.keys());
-    room.currentDrawerId = playerIds[0];
+    const firstPlayerId = playerIds[0];
+    if (!firstPlayerId) return;
+    room.currentDrawerId = firstPlayerId;
 
     room.wordOptions = getRandomWords(3);
   }
@@ -87,7 +89,9 @@ export class GameLogic {
     if (unrevealedIndices.length > 0) {
       const randomIndex =
         unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
-      room.revealedIndices.add(randomIndex);
+      if (randomIndex !== undefined) {
+        room.revealedIndices.add(randomIndex);
+      }
     }
   }
 
@@ -113,10 +117,14 @@ export class GameLogic {
     if (!room.currentDrawerId) return;
 
     const playerIds = Array.from(room.players.keys());
-    const currentIndex = playerIds.indexOf(room.currentDrawerId);
+    const currentIndex = room.currentDrawerId
+      ? playerIds.indexOf(room.currentDrawerId)
+      : -1;
     const nextIndex = (currentIndex + 1) % playerIds.length;
+    const nextPlayerId = playerIds[nextIndex];
+    if (!nextPlayerId) return;
 
-    room.currentDrawerId = playerIds[nextIndex];
+    room.currentDrawerId = nextPlayerId;
     room.wordOptions = await getRandomWords(3);
     room.gameState = "choosing";
     room.currentWord = null;

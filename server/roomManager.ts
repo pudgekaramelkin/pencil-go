@@ -80,7 +80,23 @@ export class RoomManager {
     if (room.players.size === 0) {
       this.deleteRoom(code);
     } else if (room.hostId === playerId) {
-      room.hostId = Array.from(room.players.keys())[0];
+      const newHostId = Array.from(room.players.keys())[0];
+      if (newHostId) {
+        room.hostId = newHostId;
+      }
     }
+  }
+
+  getRoomCount(): number {
+    return this.rooms.size;
+  }
+
+  findRoomByPlayerId(playerId: string): Room | undefined {
+    for (const room of this.rooms.values()) {
+      if (room.players.has(playerId)) {
+        return room;
+      }
+    }
+    return undefined;
   }
 }

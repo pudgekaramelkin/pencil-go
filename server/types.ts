@@ -1,17 +1,6 @@
-export type Player = {
-  id: string;
-  name: string;
-  score: number;
-  isReady: boolean;
-  hasGuessedCorrectly: boolean;
-};
+import type { Player, DrawStroke } from "../shared/types.js";
 
-export type DrawStroke = {
-  tool: "pen" | "eraser";
-  points: number[];
-  color: string;
-  size: number;
-};
+export type { Player, DrawStroke };
 
 export type Room = {
   code: string;

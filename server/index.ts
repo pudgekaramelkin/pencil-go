@@ -5,8 +5,20 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { RoomManager } from "./roomManager.js";
 import { GameLogic } from "./gameLogic.js";
-import { containsProfanity } from "./profanityFilter.js";
-import { DrawStroke } from "./types.js";
+import { containsProfanity, filterProfanity } from "./profanityFilter.js";
+import type { DrawStroke } from "./types.js";
+
+interface SocketResponse {
+  success: boolean;
+  error?: string;
+  roomCode?: string;
+}
+
+interface GameSettings {
+  maxPlayers?: number;
+  totalRounds?: number;
+  roundTime?: number;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,7 +40,7 @@ app.get("/health", (_, res) => {
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
-    rooms: roomManager["rooms"].size,
+    rooms: roomManager.getRoomCount(),
     connections: io.engine.clientsCount,
   });
 });
@@ -46,7 +58,10 @@ io.on("connection", (socket) => {
 
   socket.on(
     "createRoom",
-    ({ playerName }: { playerName: string }, callback: (res: any) => void) => {
+    (
+      { playerName }: { playerName: string },
+      callback: (res: SocketResponse) => void
+    ) => {
       if (containsProfanity(playerName)) {
         callback({ success: false, error: "Недопустимое имя" });
         return;
@@ -63,7 +78,7 @@ io.on("connection", (socket) => {
     "joinRoom",
     (
       { roomCode, playerName }: { roomCode: string; playerName: string },
-      callback: (res: any) => void,
+      callback: (res: SocketResponse) => void
     ) => {
       if (containsProfanity(playerName)) {
         callback({ success: false, error: "Недопустимое имя" });
@@ -100,7 +115,13 @@ io.on("connection", (socket) => {
 
   socket.on(
     "updateSettings",
-    ({ roomCode, settings }: { roomCode: string; settings: any }) => {
+    ({
+      roomCode,
+      settings,
+    }: {
+      roomCode: string;
+      settings: GameSettings;
+    }) => {
       const room = roomManager.getRoom(roomCode);
       if (!room || socket.id !== room.hostId) return;
 
@@ -187,10 +208,13 @@ io.on("connection", (socket) => {
         }
       }
 
+      // Фильтруем нецензурные слова в сообщениях
+      const filteredMessage = filterProfanity(message);
+
       io.to(roomCode).emit("chatMessage", {
         playerId: socket.id,
         playerName: player.name,
-        message,
+        message: filteredMessage,
         timestamp: Date.now(),
       });
     },
@@ -220,17 +244,15 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Пользователь отключился:", socket.id);
 
-    for (const [code, room] of Array.from(roomManager["rooms"].entries())) {
-      if (room.players.has(socket.id)) {
-        roomManager.removePlayer(code, socket.id);
-        emitRoomState(code);
-        break;
-      }
+    const room = roomManager.findRoomByPlayerId(socket.id);
+    if (room) {
+      roomManager.removePlayer(room.code, socket.id);
+      emitRoomState(room.code);
     }
   });
 });
 
-function emitRoomState(roomCode: string) {
+function emitRoomState(roomCode: string): void {
   const room = roomManager.getRoom(roomCode);
   if (!room) return;
 
@@ -254,20 +276,40 @@ function emitRoomState(roomCode: string) {
   });
 }
 
-function startRoundTimers(roomCode: string) {
+function startRoundTimers(roomCode: string): void {
   clearRoundTimers(roomCode);
 
   const room = roomManager.getRoom(roomCode);
-  if (!room) return;
+  if (!room || !room.currentWord) return;
 
   const timers: NodeJS.Timeout[] = [];
 
-  for (let i = 5; i <= room.roundTime; i += 5) {
-    const timer = setTimeout(() => {
-      gameLogic.revealLetter(room);
+  const letters = room.currentWord
+    .split("")
+    .filter((char) => char !== " ")
+    .length;
+
+  const lettersToReveal = Math.max(0, letters - 1);
+
+  if (lettersToReveal > 0) {
+    const finalRevealTime = 5;
+    const revealDuration = Math.max(1, room.roundTime - finalRevealTime);
+    const interval = revealDuration / lettersToReveal;
+
+    for (let i = 0; i < lettersToReveal; i++) {
+      const delay = Math.round(interval * (i + 1) * 1000);
+      const timer = setTimeout(() => {
+        gameLogic.revealLetter(room);
+        emitRoomState(roomCode);
+      }, delay);
+      timers.push(timer);
+    }
+
+    const finalRevealTimer = setTimeout(() => {
+      gameLogic.revealAllButOne(room);
       emitRoomState(roomCode);
-    }, i * 1000);
-    timers.push(timer);
+    }, (room.roundTime - finalRevealTime) * 1000);
+    timers.push(finalRevealTimer);
   }
 
   const endTimer = setTimeout(() => {
@@ -278,7 +320,7 @@ function startRoundTimers(roomCode: string) {
   revealTimers.set(roomCode, timers);
 }
 
-function endRoundNow(roomCode: string) {
+function endRoundNow(roomCode: string): void {
   clearRoundTimers(roomCode);
 
   const room = roomManager.getRoom(roomCode);
@@ -288,7 +330,7 @@ function endRoundNow(roomCode: string) {
   emitRoomState(roomCode);
 }
 
-function clearRoundTimers(roomCode: string) {
+function clearRoundTimers(roomCode: string): void {
   const timers = revealTimers.get(roomCode);
   if (timers) {
     timers.forEach((t) => clearTimeout(t));
@@ -296,7 +338,7 @@ function clearRoundTimers(roomCode: string) {
   }
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
@@ -304,8 +346,9 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(join(__dirname, "../dist/index.html"));
   });
 }
-//@ts-ignore TODO: пофиксить
-httpServer.listen(PORT, "0.0.0.0", () => {
+
+const host = "0.0.0.0";
+httpServer.listen(PORT, host, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
   if (process.env.NODE_ENV !== "production") {

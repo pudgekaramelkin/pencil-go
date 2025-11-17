@@ -1,5 +1,5 @@
 import { Room } from "./types.js";
-import { getRandomWords } from "./wordService.js";
+import { getRandomWords, getFallbackWords } from "./wordService.js";
 
 export class GameLogic {
   startGame(room: Room): void {
@@ -9,9 +9,12 @@ export class GameLogic {
     room.gameState = "choosing";
 
     const playerIds = Array.from(room.players.keys());
-    room.currentDrawerId = playerIds[0];
+    const firstPlayerId = playerIds[0];
+    if (!firstPlayerId) return;
+    room.currentDrawerId = firstPlayerId;
 
-    room.wordOptions = getRandomWords(3);
+    const wordOptions = getRandomWords(3);
+    room.wordOptions = wordOptions && wordOptions.length > 0 ? wordOptions : getFallbackWords(3);
   }
 
   selectWord(room: Room, word: string): void {
@@ -50,8 +53,10 @@ export class GameLogic {
       player.hasGuessedCorrectly = true;
       room.guessedPlayers.add(playerId);
 
-      const drawer = room.players.get(room.currentDrawerId!);
-      if (drawer) drawer.score += 50;
+      if (room.currentDrawerId) {
+        const drawer = room.players.get(room.currentDrawerId);
+        if (drawer) drawer.score += 50;
+      }
 
       return true;
     }
@@ -74,23 +79,50 @@ export class GameLogic {
   revealLetter(room: Room): void {
     if (!room.currentWord) return;
 
-    const unrevealedIndices = room.currentWord
+    const currentWord = room.currentWord;
+    const unrevealedIndices = currentWord
       .split("")
       .map((_, i) => i)
       .filter(
-        (i) => !room.revealedIndices.has(i) && room.currentWord![i] !== " ",
+        (i) => !room.revealedIndices.has(i) && currentWord[i] !== " ",
       );
 
-    if (unrevealedIndices.length > 0) {
+    // Не открываем букву, если осталась только одна неоткрытая буква
+    if (unrevealedIndices.length > 1) {
       const randomIndex =
         unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
-      room.revealedIndices.add(randomIndex);
+      if (randomIndex !== undefined) {
+        room.revealedIndices.add(randomIndex);
+      }
+    }
+  }
+
+  revealAllButOne(room: Room): void {
+    if (!room.currentWord) return;
+
+    const currentWord = room.currentWord;
+    const unrevealedIndices = currentWord
+      .split("")
+      .map((_, i) => i)
+      .filter(
+        (i) => !room.revealedIndices.has(i) && currentWord[i] !== " ",
+      );
+
+    // Открываем все буквы кроме одной (последней)
+    if (unrevealedIndices.length > 1) {
+      // Оставляем последнюю букву закрытой
+      const lettersToReveal = unrevealedIndices.slice(0, -1);
+      lettersToReveal.forEach((index) => {
+        room.revealedIndices.add(index);
+      });
     }
   }
 
   endRound(room: Room): void {
+    if (!room.currentDrawerId) return;
+
     const playerIds = Array.from(room.players.keys());
-    const currentIndex = playerIds.indexOf(room.currentDrawerId!);
+    const currentIndex = playerIds.indexOf(room.currentDrawerId);
     const nextIndex = (currentIndex + 1) % playerIds.length;
 
     if (nextIndex === 0) {
@@ -105,12 +137,20 @@ export class GameLogic {
   }
 
   async nextRound(room: Room): Promise<void> {
-    const playerIds = Array.from(room.players.keys());
-    const currentIndex = playerIds.indexOf(room.currentDrawerId!);
-    const nextIndex = (currentIndex + 1) % playerIds.length;
+    if (!room.currentDrawerId) return;
 
-    room.currentDrawerId = playerIds[nextIndex];
-    room.wordOptions = await getRandomWords(3);
+    const playerIds = Array.from(room.players.keys());
+    const currentIndex = room.currentDrawerId
+      ? playerIds.indexOf(room.currentDrawerId)
+      : -1;
+    const nextIndex = (currentIndex + 1) % playerIds.length;
+    const nextPlayerId = playerIds[nextIndex];
+    if (!nextPlayerId) return;
+
+    room.currentDrawerId = nextPlayerId;
+    const wordOptions = await getRandomWords(3);
+    room.wordOptions =
+      wordOptions && wordOptions.length > 0 ? wordOptions : getFallbackWords(3);
     room.gameState = "choosing";
     room.currentWord = null;
     room.guessedPlayers.clear();

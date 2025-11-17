@@ -34,7 +34,7 @@ export class RoomManager {
       ]),
       maxPlayers: 10,
       totalRounds: 3,
-      roundTime: 30,
+      roundTime: 120,
       currentRound: 0,
       currentDrawerId: null,
       currentWord: null,
@@ -80,7 +80,23 @@ export class RoomManager {
     if (room.players.size === 0) {
       this.deleteRoom(code);
     } else if (room.hostId === playerId) {
-      room.hostId = Array.from(room.players.keys())[0];
+      const newHostId = Array.from(room.players.keys())[0];
+      if (newHostId) {
+        room.hostId = newHostId;
+      }
     }
+  }
+
+  getRoomCount(): number {
+    return this.rooms.size;
+  }
+
+  findRoomByPlayerId(playerId: string): Room | null {
+    for (const room of this.rooms.values()) {
+      if (room.players.has(playerId)) {
+        return room;
+      }
+    }
+    return null;
   }
 }

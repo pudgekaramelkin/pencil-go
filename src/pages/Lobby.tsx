@@ -111,7 +111,7 @@ export default function Lobby() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                      {player.name[0]?.toUpperCase() ?? "?"}
+                      {player.name[0]?.toUpperCase() ?? "—"}
                     </div>
                     <div>
                       <div className="font-semibold text-gray-800 flex items-center gap-2">

@@ -20,20 +20,21 @@ export default function Game() {
 
   const [timeLeft, setTimeLeft] = useState(roundTime);
 
-  useEffect(() => {
-    if (gameState === "drawing" && roundStartTime) {
-      const interval = setInterval(() => {
-        const elapsed = (Date.now() - roundStartTime) / 1000;
-        const remaining = Math.max(0, roundTime - elapsed);
-        setTimeLeft(Math.floor(remaining));
-        if (remaining <= 0) {
-          clearInterval(interval);
-        }
-      }, 100);
-      return () => clearInterval(interval);
+useEffect(() => {
+  if (gameState !== "drawing" || !roundStartTime) return;
+
+  const interval = setInterval(() => {
+    const elapsed = (Date.now() - roundStartTime) / 1000;
+    const remaining = Math.max(0, roundTime - elapsed);
+    setTimeLeft(Math.floor(remaining));
+
+    if (remaining <= 0) {
+      clearInterval(interval);
     }
-    return undefined;
-  }, [gameState, roundStartTime, roundTime]);
+  }, 100);
+
+  return () => clearInterval(interval);
+}, [gameState, roundStartTime, roundTime]);
 
   const isDrawer = playerId === currentDrawerId;
 

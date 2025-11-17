@@ -25,7 +25,7 @@ export default function PlayerList() {
                     : "bg-gradient-to-r from-gray-600 to-gray-500"
                 }`}
               >
-                {player.name[0]?.toUpperCase() ?? "?"}
+                {player.name[0]?.toUpperCase() ?? "—"}
               </div>
               <div>
                 <div className="font-semibold text-gray-800">{player.name}</div>

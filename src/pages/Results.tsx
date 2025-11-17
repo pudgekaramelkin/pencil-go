@@ -65,7 +65,7 @@ export default function Results() {
                         : `${index + 1}`}
                 </div>
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  {player.name[0]?.toUpperCase() ?? "?"}
+                  {player.name[0]?.toUpperCase() ?? "—"}
                 </div>
                 <div
                   className={`font-semibold text-lg ${

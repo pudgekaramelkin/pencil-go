@@ -91,12 +91,12 @@ export class RoomManager {
     return this.rooms.size;
   }
 
-  findRoomByPlayerId(playerId: string): Room | undefined {
+  findRoomByPlayerId(playerId: string): Room | null {
     for (const room of this.rooms.values()) {
       if (room.players.has(playerId)) {
         return room;
       }
     }
-    return undefined;
+    return null;
   }
 }

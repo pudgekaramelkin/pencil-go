@@ -13,7 +13,7 @@ export class GameLogic {
     if (!firstPlayerId) return;
     room.currentDrawerId = firstPlayerId;
 
-    room.wordOptions = getRandomWords(3);
+    room.wordOptions = getRandomWords(3) ?? [];
   }
 
   selectWord(room: Room, word: string): void {
@@ -147,7 +147,7 @@ export class GameLogic {
     if (!nextPlayerId) return;
 
     room.currentDrawerId = nextPlayerId;
-    room.wordOptions = await getRandomWords(3);
+    room.wordOptions = (await getRandomWords(3)) ?? [];
     room.gameState = "choosing";
     room.currentWord = null;
     room.guessedPlayers.clear();

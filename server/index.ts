@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { RoomManager } from "./roomManager.js";
 import { GameLogic } from "./gameLogic.js";
-import { containsProfanity } from "./profanityFilter.js";
+import { containsProfanity, filterProfanity } from "./profanityFilter.js";
 import type { DrawStroke } from "./types.js";
 
 interface SocketResponse {
@@ -208,10 +208,13 @@ io.on("connection", (socket) => {
         }
       }
 
+      // Фильтруем нецензурные слова в сообщениях
+      const filteredMessage = filterProfanity(message);
+
       io.to(roomCode).emit("chatMessage", {
         playerId: socket.id,
         playerName: player.name,
-        message,
+        message: filteredMessage,
         timestamp: Date.now(),
       });
     },

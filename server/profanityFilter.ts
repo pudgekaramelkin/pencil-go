@@ -7,6 +7,7 @@ const PROFANITY_LIST = Array.from(
 хуёвый
 хуевый
 хуев
+нахуй
 долбаеб
 долбоеб
 ублюдок

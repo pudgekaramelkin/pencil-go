@@ -1,4 +1,5 @@
 import { useGameStore } from "../store/gameStore";
+import { EMPTY_PLAYER_INITIAL } from "../constants/ui";
 
 export default function PlayerList() {
   const { players, currentDrawerId } = useGameStore();
@@ -25,7 +26,7 @@ export default function PlayerList() {
                     : "bg-gradient-to-r from-gray-600 to-gray-500"
                 }`}
               >
-                {player.name[0]?.toUpperCase() ?? "—"}
+                {player.name[0]?.toUpperCase() ?? EMPTY_PLAYER_INITIAL}
               </div>
               <div>
                 <div className="font-semibold text-gray-800">{player.name}</div>

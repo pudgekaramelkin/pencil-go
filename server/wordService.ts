@@ -180,6 +180,19 @@ const WORDS = [
   "кукла",
 ];
 
+const FALLBACK_WORDS = [
+  "карандаш",
+  "самолет",
+  "радуга",
+  "кошка",
+  "мяч",
+  "зонт",
+  "машина",
+  "дом",
+  "рыба",
+  "лягушка",
+];
+
 export function getRandomWords(count: number = 3): string[] | null {
   if (count < 1) {
     return null;
@@ -189,4 +202,11 @@ export function getRandomWords(count: number = 3): string[] | null {
   }
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+export function getFallbackWords(count: number = 3): string[] {
+  const available = FALLBACK_WORDS.length;
+  const safeCount = Math.max(1, Math.min(count, available));
+  const shuffled = [...FALLBACK_WORDS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, safeCount);
 }

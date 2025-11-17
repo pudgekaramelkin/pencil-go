@@ -1,5 +1,5 @@
 import { Room } from "./types.js";
-import { getRandomWords } from "./wordService.js";
+import { getRandomWords, getFallbackWords } from "./wordService.js";
 
 export class GameLogic {
   startGame(room: Room): void {
@@ -13,7 +13,8 @@ export class GameLogic {
     if (!firstPlayerId) return;
     room.currentDrawerId = firstPlayerId;
 
-    room.wordOptions = getRandomWords(3) ?? [];
+    const wordOptions = getRandomWords(3);
+    room.wordOptions = wordOptions && wordOptions.length > 0 ? wordOptions : getFallbackWords(3);
   }
 
   selectWord(room: Room, word: string): void {
@@ -147,7 +148,9 @@ export class GameLogic {
     if (!nextPlayerId) return;
 
     room.currentDrawerId = nextPlayerId;
-    room.wordOptions = (await getRandomWords(3)) ?? [];
+    const wordOptions = await getRandomWords(3);
+    room.wordOptions =
+      wordOptions && wordOptions.length > 0 ? wordOptions : getFallbackWords(3);
     room.gameState = "choosing";
     room.currentWord = null;
     room.guessedPlayers.clear();

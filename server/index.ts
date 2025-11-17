@@ -33,7 +33,10 @@ const roomManager = new RoomManager();
 const gameLogic = new GameLogic();
 const revealTimers = new Map<string, NodeJS.Timeout[]>();
 
-app.use(express.static(join(__dirname, "../dist")));
+const distPath = __dirname.includes("dist-server")
+  ? join(__dirname, "../../dist")
+  : join(__dirname, "../dist");
+app.use(express.static(distPath));
 
 // Health check endpoint
 app.get("/health", (_, res) => {
@@ -343,7 +346,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
   app.get("*", (_, res) => {
-    res.sendFile(join(__dirname, "../dist/index.html"));
+    res.sendFile(join(distPath, "index.html"));
   });
 }
 
